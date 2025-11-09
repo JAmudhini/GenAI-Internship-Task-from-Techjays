@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome - AI Interviewer{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+        <div class="col-md-10 text-center text-white">
+            <h1 class="display-3 fw-bold mb-4">
+                <i class="bi bi-robot"></i> AI-Powered Interviews
+            </h1>
+            <p class="lead mb-5">Transform your hiring process with intelligent AI interviews</p>
+            
+            <div class="row g-4 mt-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="bi bi-briefcase-fill text-primary" style="font-size: 4rem;"></i>
+                            </div>
+                            <h3 class="card-title mb-3">For HR Professionals</h3>
+                            <p class="card-text text-muted mb-4">
+                                Create customized interviews, set evaluation criteria, and review candidate performance
+                            </p>
+                            <a href="{% url 'register_hr' %}" class="btn btn-primary btn-lg px-5">
+                                Register as HR <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="bi bi-person-check-fill text-success" style="font-size: 4rem;"></i>
+                            </div>
+                            <h3 class="card-title mb-3">For Candidates</h3>
+                            <p class="card-text text-muted mb-4">
+                                Take AI-powered interviews at your convenience and get instant feedback
+                            </p>
+                            <a href="{% url 'register_candidate' %}" class="btn btn-success btn-lg px-5">
+                                Register as Candidate <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-5">
+                <p class="text-white">Already have an account? 
+                    <a href="{% url 'login' %}" class="text-white fw-bold text-decoration-underline">Login here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

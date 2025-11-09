@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Candidate Dashboard - AI Interviewer{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-white">
+                <i class="bi bi-person-check"></i> Candidate Dashboard
+            </h2>
+        </div>
+    </div>
+    
+    <!-- Available Interviews -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Available Interviews</h5>
+                </div>
+                <div class="card-body">
+                    {% if available_interviews %}
+                        <div class="row g-4">
+                            {% for interview in available_interviews %}
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ interview.title }}</h5>
+                                            <p class="card-text text-muted">{{ interview.description|truncatewords:20 }}</p>
+                                            
+                                            <div class="d-flex gap-3 mb-3">
+                                                <div>
+                                                    <i class="bi bi-clock text-primary"></i>
+                                                    <small>{{ interview.duration_minutes }} min</small>
+                                                </div>
+                                                <div>
+                                                    <i class="bi bi-calendar text-success"></i>
+                                                    <small>{{ interview.created_at|date:"M d, Y" }}</small>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <strong>Expected Skills:</strong><br>
+                                                {% for skill in interview.expected_skills.all|slice:":5" %}
+                                                    <span class="badge bg-primary me-1">{{ skill.skill_name }}</span>
+                                                {% endfor %}
+                                                {% if interview.expected_skills.count > 5 %}
+                                                    <span class="badge bg-secondary">+{{ interview.expected_skills.count|add:"-5" }} more</span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <a href="{% url 'start_interview' interview.id %}" class="btn btn-primary w-100">
+                                                <i class="bi bi-play-circle"></i> Start Interview
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">No active interviews available at the moment.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- My Interview Attempts -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> My Interview Attempts</h5>
+                </div>
+                <div class="card-body">
+                    {% if my_attempts %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Interview</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Completed</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attempt in my_attempts %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ attempt.interview.title }}</strong>
+                                            </td>
+                                            <td>
+                                                {% if attempt.status == 'COMPLETED' %}
+                                                    <span class="badge bg-success">Completed</span>
+                                                {% elif attempt.status == 'IN_PROGRESS' %}
+                                                    <span class="badge bg-warning">In Progress</span>
+                                                {% elif attempt.status == 'SCHEDULED' %}
+                                                    <span class="badge bg-info">Scheduled</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ attempt.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attempt.started_at %}
+                                                    {{ attempt.started_at|date:"M d, Y H:i" }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attempt.completed_at %}
+                                                    {{ attempt.completed_at|date:"M d, Y H:i" }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attempt.status == 'IN_PROGRESS' %}
+                                                    <a href="{% url 'interview_session' attempt.id %}" class="btn btn-sm btn-warning">
+                                                        <i class="bi bi-play"></i> Continue
+                                                    </a>
+                                                {% elif attempt.status == 'COMPLETED' %}
+                                                    <a href="{% url 'view_my_result' attempt.id %}" class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-eye"></i> View Results
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">You haven't attempted any interviews yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

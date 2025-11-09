@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Interview Results - AI Interviewer{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <a href="{% url 'hr_dashboard' %}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h3><i class="bi bi-clipboard-check"></i> {{ interview.title }}</h3>
+                    <p class="text-muted">{{ interview.description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Candidate Results</h5>
+                </div>
+                <div class="card-body">
+                    {% if attempts %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Candidate</th>
+                                        <th>Status</th>
+                                        <th>Started At</th>
+                                        <th>Completed At</th>
+                                        <th>Overall Rating</th>
+                                        <th>Recommendation</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attempt in attempts %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ attempt.candidate.username }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ attempt.candidate.email }}</small>
+                                            </td>
+                                            <td>
+                                                {% if attempt.status == 'COMPLETED' %}
+                                                    <span class="badge bg-success">Completed</span>
+                                                {% elif attempt.status == 'IN_PROGRESS' %}
+                                                    <span class="badge bg-warning">In Progress</span>
+                                                {% elif attempt.status == 'SCHEDULED' %}
+                                                    <span class="badge bg-info">Scheduled</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ attempt.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attempt.started_at %}
+                                                    {{ attempt.started_at|date:"M d, Y H:i" }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attempt.completed_at %}
+                                                    {{ attempt.completed_at|date:"M d, Y H:i" }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attempt.result %}
+                                                    <strong class="text-primary">{{ attempt.result.overall_rating }}/10</strong>
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attempt.result %}
+                                                    {% if 'Highly' in attempt.result.recommendation or 'Recommend' in attempt.result.recommendation %}
+                                                        <span class="badge bg-success">{{ attempt.result.recommendation }}</span>
+                                                    {% elif 'Not' in attempt.result.recommendation %}
+                                                        <span class="badge bg-danger">{{ attempt.result.recommendation }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning">{{ attempt.result.recommendation }}</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if attempt.result %}
+                                                    <button class="btn btn-sm btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#resultModal{{ attempt.id }}">
+                                                        <i class="bi bi-eye"></i> View Details
+                                                    </button>
+                                                {% else %}
+                                                    <span class="text-muted">No results yet</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Result Detail Modal -->
+                                        {% if attempt.result %}
+                                        <div class="modal fade" id="resultModal{{ attempt.id }}" tabindex="-1">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">
+                                                            Interview Results - {{ attempt.candidate.username }}
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row mb-3">
+                                                            <div class="col-md-3">
+                                                                <div class="text-center p-3 bg-light rounded">
+                                                                    <h6 class="text-muted mb-1">Overall</h6>
+                                                                    <h2 class="mb-0 text-primary">{{ attempt.result.overall_rating }}/10</h2>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="text-center p-3 bg-light rounded">
+                                                                    <h6 class="text-muted mb-1">Technical</h6>
+                                                                    <h2 class="mb-0">{{ attempt.result.technical_score|default:"-" }}</h2>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="text-center p-3 bg-light rounded">
+                                                                    <h6 class="text-muted mb-1">Communication</h6>
+                                                                    <h2 class="mb-0">{{ attempt.result.communication_score|default:"-" }}</h2>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="text-center p-3 bg-light rounded">
+                                                                    <h6 class="text-muted mb-1">Problem Solving</h6>
+                                                                    <h2 class="mb-0">{{ attempt.result.problem_solving_score|default:"-" }}</h2>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <h6 class="fw-bold mt-4">Recommendation:</h6>
+                                                        <p class="badge badge-status bg-success">{{ attempt.result.recommendation }}</p>
+                                                        
+                                                        <h6 class="fw-bold mt-4">Overall Feedback:</h6>
+                                                        <p>{{ attempt.result.feedback }}</p>
+                                                        
+                                                        {% if attempt.result.strengths %}
+                                                        <h6 class="fw-bold mt-4">Strengths:</h6>
+                                                        <div class="alert alert-success">{{ attempt.result.strengths }}</div>
+                                                        {% endif %}
+                                                        
+                                                        {% if attempt.result.weaknesses %}
+                                                        <h6 class="fw-bold mt-4">Areas for Improvement:</h6>
+                                                        <div class="alert alert-warning">{{ attempt.result.weaknesses }}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">No candidates have attempted this interview yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

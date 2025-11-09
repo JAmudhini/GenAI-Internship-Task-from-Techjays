@@ -1,0 +1,454 @@
+{% extends 'base.html' %}
+
+{% block title %}Interview Session - AI Interviewer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .interview-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .chat-container {
+        height: 500px;
+        overflow-y: auto;
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        max-width: 80%;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message.ai {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-right: auto;
+    }
+    
+    .message.user {
+        background: #f0f0f0;
+        color: #333;
+        margin-left: auto;
+    }
+    
+    .message-label {
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+        opacity: 0.8;
+    }
+    
+    .input-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    
+    .timer {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: white;
+        background: rgba(255,255,255,0.2);
+        padding: 15px 30px;
+        border-radius: 50px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .status-indicator.active {
+        background: #10b981;
+    }
+    
+    .status-indicator.connecting {
+        background: #f59e0b;
+    }
+    
+    #voiceButton {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+    }
+    
+    #voiceButton:hover {
+        transform: scale(1.1);
+    }
+    
+    #voiceButton.active {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        animation: pulseButton 1.5s infinite;
+    }
+    
+    @keyframes pulseButton {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container interview-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="text-white">
+                <h3><i class="bi bi-mic"></i> {{ interview.title }}</h3>
+                <p class="mb-0">{{ interview.description }}</p>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="timer" id="timer">
+                <i class="bi bi-clock"></i> <span id="timeDisplay">00:00</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Bar -->
+    <div class="row mb-3">
+        <div class="col">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="status-indicator connecting" id="statusIndicator"></span>
+                            <span id="statusText">Connecting to AI Interviewer...</span>
+                        </div>
+                        <button class="btn btn-sm btn-danger" onclick="endInterview()">
+                            <i class="bi bi-stop-circle"></i> End Interview
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chat Container -->
+    <div class="chat-container" id="chatContainer">
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-chat-dots" style="font-size: 3rem;"></i>
+            <p class="mt-3">Initializing AI Interviewer...</p>
+        </div>
+    </div>
+    
+    <!-- Input Container -->
+    <div class="input-container">
+        <div class="row align-items-center">
+            <div class="col text-center">
+                <button id="voiceButton" onclick="toggleVoice()">
+                    <i class="bi bi-mic" id="voiceIcon"></i>
+                </button>
+                <p class="mt-2 mb-0 text-muted" id="voiceStatus">Click to start speaking</p>
+            </div>
+        </div>
+        
+        <!-- Text Input Alternative -->
+        <div class="row mt-3">
+            <div class="col">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="textInput" placeholder="Or type your response here..." />
+                    <button class="btn btn-primary" onclick="sendTextMessage()">
+                        <i class="bi bi-send"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Interview Info Panel -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-star"></i> Expected Skills</h6>
+                    {% for skill in skills %}
+                        <span class="badge bg-primary me-1 mb-1">{{ skill.skill_name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-clipboard-check"></i> Evaluation Criteria</h6>
+                    <ul class="list-unstyled mb-0">
+                        {% for criterion in criteria %}
+                            <li><i class="bi bi-check-circle text-success"></i> {{ criterion.criterion_name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-list-check"></i> Role Responsibilities</h6>
+                    <ul class="list-unstyled mb-0">
+                        {% for resp in responsibilities|slice:":3" %}
+                            <li><i class="bi bi-arrow-right text-primary"></i> {{ resp.responsibility|truncatewords:5 }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configuration
+    const ATTEMPT_ID = {{ attempt.id }};
+    const INTERVIEW_DURATION = {{ interview.duration_minutes }};
+    
+    // State
+    let startTime = Date.now();
+    let timerInterval;
+    let isRecording = false;
+    let sessionActive = false;
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeTimer();
+        initializeGeminiSession();
+    });
+    
+    // Timer functionality
+    function initializeTimer() {
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+    
+    function updateTimer() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        document.getElementById('timeDisplay').textContent = 
+            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        // Auto-end after duration
+        if (elapsed >= INTERVIEW_DURATION * 60) {
+            endInterview();
+        }
+    }
+    
+    // Gemini Session Management
+    async function initializeGeminiSession() {
+        try {
+            updateStatus('connecting', 'Connecting to AI Interviewer...');
+            
+            const response = await fetch('/api/start-session/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    attempt_id: ATTEMPT_ID
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                sessionActive = true;
+                addMessage('ai', data.message);
+                updateStatus('active', 'Connected - Interview in progress');
+            } else {
+                updateStatus('error', 'Failed to connect: ' + data.error);
+                alert('Failed to start interview session. Please try again.');
+            }
+            
+        } catch (error) {
+            console.error('Error initializing session:', error);
+            updateStatus('error', 'Connection failed. Please refresh and try again.');
+        }
+    }
+    
+    // Text message handling
+    async function sendTextMessage() {
+        const input = document.getElementById('textInput');
+        const message = input.value.trim();
+        
+        if (!message || !sessionActive) return;
+        
+        addMessage('user', message);
+        input.value = '';
+        
+        // Disable input while processing
+        input.disabled = true;
+        
+        try {
+            const response = await fetch('/api/send-message/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    attempt_id: ATTEMPT_ID,
+                    message: message
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                addMessage('ai', data.message);
+            } else {
+                addMessage('ai', 'Sorry, I had trouble processing that. Could you please try again?');
+            }
+            
+        } catch (error) {
+            console.error('Error sending message:', error);
+            addMessage('ai', 'Sorry, there was a connection issue. Please try again.');
+        } finally {
+            input.disabled = false;
+            input.focus();
+        }
+    }
+    
+    // Voice Recording (simplified - can be enhanced later)
+    async function toggleVoice() {
+        const button = document.getElementById('voiceButton');
+        const icon = document.getElementById('voiceIcon');
+        const status = document.getElementById('voiceStatus');
+        
+        if (!sessionActive) {
+            alert('Please wait for the interview session to start.');
+            return;
+        }
+        
+        // For now, show message that voice is coming soon
+        alert('Voice recording feature coming soon! Please use text input for now.');
+    }
+    
+    // Add message to chat
+    function addMessage(sender, text) {
+        const chatContainer = document.getElementById('chatContainer');
+        
+        // Remove initial message if exists
+        const initialMsg = chatContainer.querySelector('.text-center');
+        if (initialMsg) initialMsg.remove();
+        
+        const messageId = 'msg_' + Date.now();
+        const messageDiv = document.createElement('div');
+        messageDiv.id = messageId;
+        messageDiv.className = `message ${sender}`;
+        
+        const label = document.createElement('div');
+        label.className = 'message-label';
+        label.textContent = sender === 'ai' ? 'AI Interviewer' : 'You';
+        
+        const content = document.createElement('div');
+        content.textContent = text;
+        
+        messageDiv.appendChild(label);
+        messageDiv.appendChild(content);
+        chatContainer.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        
+        return messageId;
+    }
+    
+    // Update status
+    function updateStatus(status, text) {
+        const indicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        
+        indicator.className = `status-indicator ${status}`;
+        statusText.textContent = text;
+    }
+    
+    // End interview
+    async function endInterview() {
+        if (!confirm('Are you sure you want to end the interview? This will generate your evaluation.')) return;
+        
+        clearInterval(timerInterval);
+        updateStatus('connecting', 'Generating evaluation...');
+        
+        try {
+            const response = await fetch('/api/end-session/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    attempt_id: ATTEMPT_ID
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Interview completed! Your results are ready.');
+                window.location.href = `/interviews/candidate/result/${ATTEMPT_ID}/`;
+            } else {
+                alert('Error ending interview: ' + data.error);
+            }
+            
+        } catch (error) {
+            console.error('Error ending interview:', error);
+            alert('Error ending interview. Please try again.');
+        }
+    }
+    
+    // Helper: Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Handle Enter key in text input
+    document.getElementById('textInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendTextMessage();
+        }
+    });
+</script>
+{% endblock %}
